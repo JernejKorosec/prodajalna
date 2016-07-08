@@ -47,27 +47,46 @@ function davcnaStopnja(izvajalec, zanr) {
 
 // Prikaz seznama pesmi na strani
 streznik.get('/', function(zahteva, odgovor) {
-  pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
-          Artist.Name AS izvajalec, Track.UnitPrice * " +
-          razmerje_usd_eur + " AS cena, \
-          COUNT(InvoiceLine.InvoiceId) AS steviloProdaj, \
-          Genre.Name AS zanr \
-          FROM Track, Album, Artist, InvoiceLine, Genre \
-          WHERE Track.AlbumId = Album.AlbumId AND \
-          Artist.ArtistId = Album.ArtistId AND \
-          InvoiceLine.TrackId = Track.TrackId AND \
-          Track.GenreId = Genre.GenreId \
-          GROUP BY Track.TrackId \
-          ORDER BY steviloProdaj DESC, pesem ASC \
-          LIMIT 100", function(napaka, vrstice) {
-    if (napaka)
-      odgovor.sendStatus(500);
-    else {
-        for (var i=0; i<vrstice.length; i++)
-          vrstice[i].stopnja = davcnaStopnja(vrstice[i].izvajalec, vrstice[i].zanr);
-        odgovor.render('seznam', {seznamPesmi: vrstice});
+  if(zahteva.session.CustomerId == null) 
+  {
+        console.log("Prva prijava, ni seje uporabnika!");
+        odgovor.redirect('/prijava');
+  }
+  else
+  {
+    // ČE NI PRVA PRIJAVA IN SEJA UPORABNIKA OBSTAJA DO YOUR THING
+    if(zahteva.session.CustomerId > 0)
+    {
+      console.log("Uporabnik prijavljen ima sejo !");
+             pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
+                    Artist.Name AS izvajalec, Track.UnitPrice * " +
+                    razmerje_usd_eur + " AS cena, \
+                    COUNT(InvoiceLine.InvoiceId) AS steviloProdaj, \
+                    Genre.Name AS zanr \
+                    FROM Track, Album, Artist, InvoiceLine, Genre \
+                    WHERE Track.AlbumId = Album.AlbumId AND \
+                    Artist.ArtistId = Album.ArtistId AND \
+                    InvoiceLine.TrackId = Track.TrackId AND \
+                    Track.GenreId = Genre.GenreId \
+                    GROUP BY Track.TrackId \
+                    ORDER BY steviloProdaj DESC, pesem ASC \
+                    LIMIT 100", function(napaka, vrstice) {
+              if (napaka)
+                odgovor.sendStatus(500);
+              else {
+                  for (var i=0; i<vrstice.length; i++)
+                    vrstice[i].stopnja = davcnaStopnja(vrstice[i].izvajalec, vrstice[i].zanr);
+                  odgovor.render('seznam', {seznamPesmi: vrstice});
+                }
+            })
+            // END pb.all
+      } 
+      else
+      {
+        console.log("Uporabnik se je odjavil!");
+        odgovor.redirect('/prijava');
       }
-  })
+  }
 })
 
 // Dodajanje oz. brisanje pesmi iz košarice
@@ -233,13 +252,30 @@ streznik.post('/stranka', function(zahteva, odgovor) {
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
-    odgovor.redirect('/')
+      // <select size="10" id="seznamStrank" name="seznamStrank" class="form-control">
+    var Customer_Id = polja['seznamStrank'];
+    var Int_customer_id = parseInt(Customer_Id,10);
+    // NA NOVO PRIJAVI IZPRAZNE KOŠARICO
+    if( Int_customer_id > 0 )
+    {
+        zahteva.session.kosarica = [];
+        zahteva.session.CustomerId = Int_customer_id;
+        console.log("zahteva.session.CustomerId:" + zahteva.session.CustomerId);
+        odgovor.redirect('/');
+    }
+    else{
+        odgovor.redirect('/prijava');
+    }
+    odgovor.end(); // mora očitno biti na koncu form.parse.
+    
   });
 })
 
 // Odjava stranke
 streznik.post('/odjava', function(zahteva, odgovor) {
-    odgovor.redirect('/prijava') 
+    zahteva.session.CustomerId = [];
+    zahteva.session.kosarica = [];
+    odgovor.redirect('/prijava');
 })
 
 
