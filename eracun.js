@@ -27,7 +27,7 @@ streznik.use(
 );
 
 var razmerje_usd_eur = 0.877039116;
-
+var popust3Minute = 0;
 function davcnaStopnja(izvajalec, zanr) {
   switch (izvajalec) {
     case "Queen": case "Led Zepplin": case "Kiss":
@@ -47,27 +47,46 @@ function davcnaStopnja(izvajalec, zanr) {
 
 // Prikaz seznama pesmi na strani
 streznik.get('/', function(zahteva, odgovor) {
-  pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
-          Artist.Name AS izvajalec, Track.UnitPrice * " +
-          razmerje_usd_eur + " AS cena, \
-          COUNT(InvoiceLine.InvoiceId) AS steviloProdaj, \
-          Genre.Name AS zanr \
-          FROM Track, Album, Artist, InvoiceLine, Genre \
-          WHERE Track.AlbumId = Album.AlbumId AND \
-          Artist.ArtistId = Album.ArtistId AND \
-          InvoiceLine.TrackId = Track.TrackId AND \
-          Track.GenreId = Genre.GenreId \
-          GROUP BY Track.TrackId \
-          ORDER BY steviloProdaj DESC, pesem ASC \
-          LIMIT 100", function(napaka, vrstice) {
-    if (napaka)
-      odgovor.sendStatus(500);
-    else {
-        for (var i=0; i<vrstice.length; i++)
-          vrstice[i].stopnja = davcnaStopnja(vrstice[i].izvajalec, vrstice[i].zanr);
-        odgovor.render('seznam', {seznamPesmi: vrstice});
+  if(zahteva.session.CustomerId == null) 
+  {
+        //console.log("Prva prijava, ni seje uporabnika!");
+        odgovor.redirect('/prijava');
+  }
+  else
+  {
+    // ČE NI PRVA PRIJAVA IN SEJA UPORABNIKA OBSTAJA DO YOUR THING
+    if(zahteva.session.CustomerId > 0)
+    {
+      //console.log("Uporabnik prijavljen ima sejo !");
+             pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
+                    Artist.Name AS izvajalec, Track.UnitPrice * " +
+                    razmerje_usd_eur + " AS cena, \
+                    COUNT(InvoiceLine.InvoiceId) AS steviloProdaj, \
+                    Genre.Name AS zanr \
+                    FROM Track, Album, Artist, InvoiceLine, Genre \
+                    WHERE Track.AlbumId = Album.AlbumId AND \
+                    Artist.ArtistId = Album.ArtistId AND \
+                    InvoiceLine.TrackId = Track.TrackId AND \
+                    Track.GenreId = Genre.GenreId \
+                    GROUP BY Track.TrackId \
+                    ORDER BY steviloProdaj DESC, pesem ASC \
+                    LIMIT 100", function(napaka, vrstice) {
+              if (napaka)
+                odgovor.sendStatus(500);
+              else {
+                  for (var i=0; i<vrstice.length; i++)
+                    vrstice[i].stopnja = davcnaStopnja(vrstice[i].izvajalec, vrstice[i].zanr);
+                  odgovor.render('seznam', {seznamPesmi: vrstice});
+                }
+            })
+            // END pb.all
+      } 
+      else
+      {
+        //console.log("Uporabnik se je odjavil!");
+        odgovor.redirect('/prijava');
       }
-  })
+  }
 })
 
 // Dodajanje oz. brisanje pesmi iz košarice
@@ -133,7 +152,7 @@ var pesmiIzRacuna = function(racunId, callback) {
     Track.TrackId IN (SELECT InvoiceLine.TrackId FROM InvoiceLine, Invoice \
     WHERE InvoiceLine.InvoiceId = Invoice.InvoiceId AND Invoice.InvoiceId = " + racunId + ")",
     function(napaka, vrstice) {
-      console.log(vrstice);
+      //console.log(vrstice);
     })
 }
 
@@ -142,7 +161,7 @@ var strankaIzRacuna = function(racunId, callback) {
     pb.all("SELECT Customer.* FROM Customer, Invoice \
             WHERE Customer.CustomerId = Invoice.CustomerId AND Invoice.InvoiceId = " + racunId,
     function(napaka, vrstice) {
-      console.log(vrstice);
+      //console.log(vrstice);
     })
 }
 
@@ -153,20 +172,69 @@ streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
 
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
 streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
-  pesmiIzKosarice(zahteva, function(pesmi) {
-    if (!pesmi) {
-      odgovor.sendStatus(500);
-    } else if (pesmi.length == 0) {
-      odgovor.send("<p>V košarici nimate nobene pesmi, \
-        zato računa ni mogoče pripraviti!</p>");
-    } else {
-      odgovor.setHeader('content-type', 'text/xml');
-      odgovor.render('eslog', {
-        vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
-        postavkeRacuna: pesmi
-      })  
-    }
-  })
+  // TODO, renderiraj zadeve za customerja
+  //  if(zahteva.session.CustomerId == null) 
+  
+  var customerId = zahteva.session.CustomerId;
+  var popust1 = popust3Minute;
+  console.log('streznik.get(/izpisiRacun/:oblika: ' + popust1);
+  
+  
+  var kupci1 = [];
+  if(customerId > 0) {
+    vrniStranko(customerId,function(vrstice){
+     kupci1 = vrstice[0];
+     // ČE JE KUPEC IZBRAN ZANJ PRIPRAVI RAČUN
+        var d = new Date();
+        var curr_date = ('0' + d.getDate()).slice(-2);
+        var curr_month = ('0' + (d.getMonth() + 1) ).slice(-2); //Months are zero based
+        var curr_year = d.getFullYear();
+        var str =  curr_year + "-" + curr_month + "-" + curr_date + 'T00:00:00.0Z'; 
+        //console.log(str);
+        var racuni1 = [];
+        //2012-12-15T00:00:00.0Z
+        racuni1.InvoiceDate = str;
+            pesmiIzKosarice(zahteva, function(pesmi) {
+              if (!pesmi) {
+                odgovor.sendStatus(500);
+              } else if (pesmi.length == 0) {
+                odgovor.send("<p>V košarici nimate nobene pesmi, \
+                  zato računa ni mogoče pripraviti!</p>");
+              } else {
+                console.log("rendering slog: " + popust1 + "% popusta");
+                
+                var whatToDo = false; //xml
+                
+                if(zahteva.params.oblika == 'html')
+                {
+                  odgovor.setHeader('content-type', 'text/xml');
+                  whatToDo = true;//html
+                }
+                if(zahteva.params.oblika == 'xml')
+                {
+                  odgovor.setHeader('content-type', 'text/xml');
+                  whatToDo = false;//xml
+                }
+                if(zahteva.params.oblika == 'download')
+                {
+                  odgovor.setHeader('Content-Type', 'application/octet-stream');
+                  odgovor.setHeader('Content-Disposition', 'attachment; filename="racun.xml"');
+                  whatToDo = false;//xml
+                }
+                odgovor.render('eslog', {
+                  vizualiziraj: 
+                  //zahteva.params.oblika == 'html' ? true : false,
+                  whatToDo,
+                  postavkeRacuna: pesmi,
+                  Racun: racuni1, 
+                  Stranka: kupci1,
+                  DodatniPopust: popust1
+                })  
+              }
+            })
+     // END 
+    })
+  }
 })
 
 // Privzeto izpiši račun v HTML obliki
@@ -179,6 +247,19 @@ var vrniStranke = function(callback) {
   pb.all("SELECT * FROM Customer",
     function(napaka, vrstice) {
       callback(napaka, vrstice);
+    }
+  );
+}
+
+// Vrni specifično stranko iz podatkovne baze
+var vrniStranko = function(customerId,callback) {
+  pb.all("SELECT Customer.* FROM Customer WHERE Customer.CustomerId= " + customerId + " ",
+    function(napaka, vrstice) {
+      if (napaka) {
+        callback(false);
+      } else {
+        callback(vrstice);
+      }
     }
   );
 }
@@ -230,16 +311,45 @@ streznik.get('/prijava', function(zahteva, odgovor) {
 
 // Prikaz nakupovalne košarice za stranko
 streznik.post('/stranka', function(zahteva, odgovor) {
+  popust3Minute = 20
+// Koda resetira spremenljivkopopust na 0 vsake 3 minute ko kličemo /stranka
+  setTimeout(function(){
+    popust3Minute = 0;
+    console.log('setTimeout popust: ' + popust3Minute);
+  }, 3 * 60 * 1000); // 3 minute, 60 second, 1000 milisekund OZIROMA KAR 3 MINUTE
+  
+  setInterval(function(){
+    console.log('setInterval popust: ' + popust3Minute);
+    
+  }, 3 * 1 * 1000); // 3 minute, 60 second, 1000 milisekund OZIROMA KAR 3 MINUTE
+
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
-    odgovor.redirect('/')
+      // <select size="10" id="seznamStrank" name="seznamStrank" class="form-control">
+    var Customer_Id = polja['seznamStrank'];
+    var Int_customer_id = parseInt(Customer_Id,10);
+    // NA NOVO PRIJAVI IZPRAZNE KOŠARICO
+    if( Int_customer_id > 0 )
+    {
+        zahteva.session.kosarica = [];
+        zahteva.session.CustomerId = Int_customer_id;
+        //console.log("zahteva.session.CustomerId:" + zahteva.session.CustomerId);
+        odgovor.redirect('/');
+    }
+    else{
+        odgovor.redirect('/prijava');
+    }
+    odgovor.end(); // mora očitno biti na koncu form.parse.
+    
   });
 })
 
 // Odjava stranke
 streznik.post('/odjava', function(zahteva, odgovor) {
-    odgovor.redirect('/prijava') 
+    zahteva.session.CustomerId = [];
+    zahteva.session.kosarica = [];
+    odgovor.redirect('/prijava');
 })
 
 
