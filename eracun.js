@@ -152,7 +152,17 @@ var pesmiIzRacuna = function(racunId, callback) {
     Track.TrackId IN (SELECT InvoiceLine.TrackId FROM InvoiceLine, Invoice \
     WHERE InvoiceLine.InvoiceId = Invoice.InvoiceId AND Invoice.InvoiceId = " + racunId + ")",
     function(napaka, vrstice) {
-      console.log(vrstice);
+      //console.log(vrstice);   // TODO FIXME ZBRISI
+      if(napaka) {
+       callback(false);
+      }
+      else
+      {
+       for (var i=0; i<vrstice.length; i++) {
+          vrstice[i].stopnja = davcnaStopnja((vrstice[i].opisArtikla.split(' (')[1]).split(')')[0], vrstice[i].zanr);
+        }
+        callback(vrstice);
+      }
     })
 }
 
@@ -161,13 +171,85 @@ var strankaIzRacuna = function(racunId, callback) {
     pb.all("SELECT Customer.* FROM Customer, Invoice \
             WHERE Customer.CustomerId = Invoice.CustomerId AND Invoice.InvoiceId = " + racunId,
     function(napaka, vrstice) {
-      console.log(vrstice);
+      if(!napaka) callback(vrstice);
     })
+}
+
+// Vrni podrobnosti računa
+var podrobnostiRacuna = function(invoideId, callback) {
+  var sqlStatement = "SELECT invoice.* FROM Invoice WHERE Invoice.InvoiceId = " + invoideId;
+  //console.log("sqlStatement:"+sqlStatement);
+    pb.all(sqlStatement,function(napaka, vrstice) {
+      if(!napaka) {
+        //console.log("podrobnostiRacuna + !napaka");
+        /*
+        for(var name in vrstice[0]) {
+            console.log('-'+name);
+        }
+        */
+        callback(vrstice);
+      }
+      else
+      {
+        //console.log("podrobnostiRacuna + napaka"); 
+      }
+      
+    })
+}
+
+function myFunction(item, index) {
+    console.log( "index[" + index + "]: " + item); //"<br />");
 }
 
 // Izpis računa v HTML predstavitvi na podlagi podatkov iz baze
 streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
-  odgovor.end();
+    var form = new formidable.IncomingForm();
+    form.parse(zahteva, function (napaka1, polja, datoteke) {
+    var napaka2 = false;
+    try {
+     var invoiceId = polja.seznamRacunov;
+          podrobnostiRacuna(invoiceId, function(vrstice) {
+              var racun_Id = vrstice[0].InvoiceId
+              strankaIzRacuna(racun_Id, function(vrstice2) {
+                 //pesmiIzKosarice(zahteva, function(pesmi//TODO FIXME ZBRIŠI ČE DELA SPODNJA VRSTICA
+                 pesmiIzRacuna(racun_Id, function(pesmi) {
+                                if (!pesmi) {
+                                  odgovor.sendStatus(500);
+                                } else if (pesmi.length == 0) {
+                                  odgovor.send("<p>V košarici nimate nobene pesmi, \
+                                    zato računa ni mogoče pripraviti!</p>");
+                                } else {
+                                          var racuni1 = vrstice[0];
+                                          var kupci1 = vrstice2[0];
+                                          /*
+                                          var rokPlacilaDni = 6;
+                                          var result2 = new Date(Date.parse(racuni1.InvoiceDate)).setDate(new Date(Date.parse(racuni1.InvoiceDate)).getDate() + rokPlacilaDni);
+                                          var today1 = new Date(result2).toLocaleDateString('en-GB', {  
+                                              day : 'numeric',
+                                              month : 'numeric',
+                                              year : 'numeric'
+                                           }).split(' ').join('-'); //.toString().replace('/','.');
+                                          var strDatumPlacila = today1;
+                                          console.log(strDatumPlacila);
+                                          */
+                                          
+                                          odgovor.setHeader('content-type', 'text/xml');
+                                          odgovor.render('eslog', {
+                                            vizualiziraj: true, 
+                                            postavkeRacuna: pesmi,
+                                            Racun: racuni1, 
+                                            Stranka: kupci1//,
+                                            //DatumPlacila: strDatumPlacila
+                                          });
+                                          odgovor.end();
+                                }
+                 }); // pesmiizkosarice
+              }); 
+      });
+    } catch (err) {
+      napaka2 = true;
+    }
+  });
 })
 
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
