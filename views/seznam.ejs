@@ -46,6 +46,9 @@
           <button id="racun_xml" type='button' class='btn btn-success btn-xs' disabled>
               <span class='glyphicon glyphicon-euro'></span> Pripravi račun (XML)
           </button>
+          <button id="prenesi_racun_xml" type='button' class='btn btn-success btn-xs' target: '_blank' disabled>
+              <span class='glyphicon glyphicon-euro'></span> Prenesi račun (XML)
+          </button>
         </div>
       </div>
     </div>
@@ -75,6 +78,7 @@
               if (!podatki || Object.keys(podatki).length == 0) {
                 $("#racun_html").prop("disabled", true);
                 $("#racun_xml").prop("disabled", true);
+                $("#prenesi_racun_xml").prop("disabled", true);
               }
             });
             pesem_kosarica.remove();
@@ -83,6 +87,8 @@
           $("#pesmi #" + id).hide();
           $("#racun_html").prop("disabled", false);
           $("#racun_xml").prop("disabled", false);
+          $("#prenesi_racun_xml").prop("disabled", false);
+          
         }
         
         
@@ -112,6 +118,11 @@
         })
         $("#racun_xml").click(function() {
           window.location = '/izpisiRacun/xml';
+        })
+        $("#prenesi_racun_xml").click(function() {
+          //e.preventDefault();  //stop the browser from following
+          //window.location = '/izpisiRacun/xml'; //url
+          window.location.href = '/izpisiRacun/download';
         })
       });
     </script>

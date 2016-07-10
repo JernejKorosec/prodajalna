@@ -27,7 +27,7 @@ streznik.use(
 );
 
 var razmerje_usd_eur = 0.877039116;
-
+var popust3Minute = 0;
 function davcnaStopnja(izvajalec, zanr) {
   switch (izvajalec) {
     case "Queen": case "Led Zepplin": case "Kiss":
@@ -49,7 +49,7 @@ function davcnaStopnja(izvajalec, zanr) {
 streznik.get('/', function(zahteva, odgovor) {
   if(zahteva.session.CustomerId == null) 
   {
-        console.log("Prva prijava, ni seje uporabnika!");
+        //console.log("Prva prijava, ni seje uporabnika!");
         odgovor.redirect('/prijava');
   }
   else
@@ -57,7 +57,7 @@ streznik.get('/', function(zahteva, odgovor) {
     // ČE NI PRVA PRIJAVA IN SEJA UPORABNIKA OBSTAJA DO YOUR THING
     if(zahteva.session.CustomerId > 0)
     {
-      console.log("Uporabnik prijavljen ima sejo !");
+      //console.log("Uporabnik prijavljen ima sejo !");
              pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
                     Artist.Name AS izvajalec, Track.UnitPrice * " +
                     razmerje_usd_eur + " AS cena, \
@@ -83,7 +83,7 @@ streznik.get('/', function(zahteva, odgovor) {
       } 
       else
       {
-        console.log("Uporabnik se je odjavil!");
+        //console.log("Uporabnik se je odjavil!");
         odgovor.redirect('/prijava');
       }
   }
@@ -254,20 +254,69 @@ streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
 
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
 streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
-  pesmiIzKosarice(zahteva, function(pesmi) {
-    if (!pesmi) {
-      odgovor.sendStatus(500);
-    } else if (pesmi.length == 0) {
-      odgovor.send("<p>V košarici nimate nobene pesmi, \
-        zato računa ni mogoče pripraviti!</p>");
-    } else {
-      odgovor.setHeader('content-type', 'text/xml');
-      odgovor.render('eslog', {
-        vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
-        postavkeRacuna: pesmi
-      })  
-    }
-  })
+  // TODO, renderiraj zadeve za customerja
+  //  if(zahteva.session.CustomerId == null) 
+  
+  var customerId = zahteva.session.CustomerId;
+  var popust1 = popust3Minute;
+  console.log('streznik.get(/izpisiRacun/:oblika: ' + popust1);
+  
+  
+  var kupci1 = [];
+  if(customerId > 0) {
+    vrniStranko(customerId,function(vrstice){
+     kupci1 = vrstice[0];
+     // ČE JE KUPEC IZBRAN ZANJ PRIPRAVI RAČUN
+        var d = new Date();
+        var curr_date = ('0' + d.getDate()).slice(-2);
+        var curr_month = ('0' + (d.getMonth() + 1) ).slice(-2); //Months are zero based
+        var curr_year = d.getFullYear();
+        var str =  curr_year + "-" + curr_month + "-" + curr_date + 'T00:00:00.0Z'; 
+        //console.log(str);
+        var racuni1 = [];
+        //2012-12-15T00:00:00.0Z
+        racuni1.InvoiceDate = str;
+            pesmiIzKosarice(zahteva, function(pesmi) {
+              if (!pesmi) {
+                odgovor.sendStatus(500);
+              } else if (pesmi.length == 0) {
+                odgovor.send("<p>V košarici nimate nobene pesmi, \
+                  zato računa ni mogoče pripraviti!</p>");
+              } else {
+                console.log("rendering slog: " + popust1 + "% popusta");
+                
+                var whatToDo = false; //xml
+                
+                if(zahteva.params.oblika == 'html')
+                {
+                  odgovor.setHeader('content-type', 'text/xml');
+                  whatToDo = true;//html
+                }
+                if(zahteva.params.oblika == 'xml')
+                {
+                  odgovor.setHeader('content-type', 'text/xml');
+                  whatToDo = false;//xml
+                }
+                if(zahteva.params.oblika == 'download')
+                {
+                  odgovor.setHeader('Content-Type', 'application/octet-stream');
+                  odgovor.setHeader('Content-Disposition', 'attachment; filename="racun.xml"');
+                  whatToDo = false;//xml
+                }
+                odgovor.render('eslog', {
+                  vizualiziraj: 
+                  //zahteva.params.oblika == 'html' ? true : false,
+                  whatToDo,
+                  postavkeRacuna: pesmi,
+                  Racun: racuni1, 
+                  Stranka: kupci1,
+                  DodatniPopust: popust1
+                })  
+              }
+            })
+     // END 
+    })
+  }
 })
 
 // Privzeto izpiši račun v HTML obliki
@@ -280,6 +329,19 @@ var vrniStranke = function(callback) {
   pb.all("SELECT * FROM Customer",
     function(napaka, vrstice) {
       callback(napaka, vrstice);
+    }
+  );
+}
+
+// Vrni specifično stranko iz podatkovne baze
+var vrniStranko = function(customerId,callback) {
+  pb.all("SELECT Customer.* FROM Customer WHERE Customer.CustomerId= " + customerId + " ",
+    function(napaka, vrstice) {
+      if (napaka) {
+        callback(false);
+      } else {
+        callback(vrstice);
+      }
     }
   );
 }
@@ -356,6 +418,18 @@ streznik.get('/prijava', function(zahteva, odgovor) {
 
 // Prikaz nakupovalne košarice za stranko
 streznik.post('/stranka', function(zahteva, odgovor) {
+  popust3Minute = 20
+// Koda resetira spremenljivkopopust na 0 vsake 3 minute ko kličemo /stranka
+  setTimeout(function(){
+    popust3Minute = 0;
+    console.log('setTimeout popust: ' + popust3Minute);
+  }, 3 * 60 * 1000); // 3 minute, 60 second, 1000 milisekund OZIROMA KAR 3 MINUTE
+  
+  setInterval(function(){
+    console.log('setInterval popust: ' + popust3Minute);
+    
+  }, 3 * 1 * 1000); // 3 minute, 60 second, 1000 milisekund OZIROMA KAR 3 MINUTE
+
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
@@ -367,7 +441,7 @@ streznik.post('/stranka', function(zahteva, odgovor) {
     {
         zahteva.session.kosarica = [];
         zahteva.session.CustomerId = Int_customer_id;
-        console.log("zahteva.session.CustomerId:" + zahteva.session.CustomerId);
+        //console.log("zahteva.session.CustomerId:" + zahteva.session.CustomerId);
         odgovor.redirect('/');
     }
     else{

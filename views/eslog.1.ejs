@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <% if (vizualiziraj) { %>
 <?xml-stylesheet type="text/xsl" href="../eSLOG/vizualizacija.xslt"?>
-<% } %>
+<% } %>
 <IzdaniRacunEnostavni xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xds="http://uri.etsi.org/01903/v1.1.1#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.gzs.si/e-poslovanje/sheme/eSLOG_1-6_EnostavniRacun.xsd">
 	<Racun Id="data">
 		<!-- verzija priročnika -->
@@ -34,8 +34,7 @@
 		<!-- datum izdaje računa -->
 		<DatumiRacuna>
 			<VrstaDatuma>137</VrstaDatuma>
-			<!-- <DatumRacuna>2016-04-13T00:00:00.0Z</DatumRacuna> -->
-			<DatumRacuna><%= Racun.InvoiceDate %></DatumRacuna>
+			<DatumRacuna>2016-04-13T00:00:00.0Z</DatumRacuna>
 		</DatumiRacuna>
 		<!-- valuta računa -->
 		<Valuta>
@@ -54,10 +53,7 @@
 			</PodatkiORokih>
 			<PlacilniRoki>
 				<VrstaDatumaPlacilnegaRoka>13</VrstaDatumaPlacilnegaRoka>
-				<!-- <Datum>2016-04-18T00:00:00.0Z</Datum> -->
-				<!-- <Datum>< % = DatumPlacila % ></Datum> -->
-				<Datum><%= Racun.InvoiceDate %></Datum>
-				
+				<Datum>2016-04-18T00:00:00.0Z</Datum>
 			</PlacilniRoki>
 		</PlacilniPogoji>
 		<!-- tekst glava -->
@@ -72,20 +68,17 @@
 		<!-- obdobje od -->
 		<DatumiRacuna>
 			<VrstaDatuma>263</VrstaDatuma>
-			<!--<DatumRacuna>2016-01-01T00:00:00.0Z</DatumRacuna> -->
-			<DatumRacuna><%= Racun.InvoiceDate %></DatumRacuna>
+			<DatumRacuna>2016-01-01T00:00:00.0Z</DatumRacuna>
 		</DatumiRacuna>
 		<!-- obdobje do -->
 		<DatumiRacuna>
 			<VrstaDatuma>263</VrstaDatuma>
-			<!-- <DatumRacuna>2016-04-30T00:00:00.0Z</DatumRacuna> -->
-			<DatumRacuna><%= Racun.InvoiceDate %></DatumRacuna>
+			<DatumRacuna>2016-04-30T00:00:00.0Z</DatumRacuna>
 		</DatumiRacuna>
 		<!-- datum storitve -->
 		<DatumiRacuna>
 			<VrstaDatuma>35</VrstaDatuma>
-			<!-- <DatumRacuna>2016-04-13T00:00:00.0Z</DatumRacuna> -->
-			<DatumRacuna><%= Racun.InvoiceDate %></DatumRacuna>
+			<DatumRacuna>2016-04-13T00:00:00.0Z</DatumRacuna>
 		</DatumiRacuna>
 		<!-- opis obdobja -->
 		<PoljubnoBesedilo>
@@ -180,56 +173,51 @@
 			<NazivNaslovPodjetja>
 				<VrstaPartnerja>BY</VrstaPartnerja>
 				<NazivPartnerja>
-					<NazivPartnerja1><%= Stranka.FirstName %> <%= Stranka.LastName %></NazivPartnerja1>
-					<NazivPartnerja2><%= Stranka.Company %></NazivPartnerja2>
-					<!--
+					<NazivPartnerja1>Univerza v Ljubljani, </NazivPartnerja1>
+					<NazivPartnerja2>Fakulteta za računalništvo in informatiko</NazivPartnerja2>
 					<NazivPartnerja3>Laboratorij za </NazivPartnerja3>
 					<NazivPartnerja4>podatkovne tehnologije</NazivPartnerja4>
-					-->
 				</NazivPartnerja>
 				<Ulica>
-					<Ulica1><%= Stranka.Address %></Ulica1>
-					<!--
 					<Ulica1>Večna pot </Ulica1>
 					<Ulica2>113</Ulica2>
 					<Ulica3>nadstropje 2, kabinet R2.49</Ulica3>
-					-->
 				</Ulica>
-				<Kraj><%= Stranka.City %></Kraj>
-				<NazivDrzave><%= Stranka.Country %></NazivDrzave>
-				<PostnaStevilka><%= Stranka.PostalCode %></PostnaStevilka>
-				<KodaDrzave><!--SI--></KodaDrzave>
+				<Kraj>Ljubljana</Kraj>
+				<NazivDrzave>Slovenija</NazivDrzave>
+				<PostnaStevilka>1000</PostnaStevilka>
+				<KodaDrzave>SI</KodaDrzave>
 			</NazivNaslovPodjetja>
 			<FinancniPodatkiPodjetja>
 				<BancniRacun>
-					<StevilkaBancnegaRacuna><!--SI56020120090111333--></StevilkaBancnegaRacuna>
-					<NazivBanke1><!--Moja banka d.d.--></NazivBanke1>
-					<NazivBanke2><!--Podružnica center--></NazivBanke2>
-					<BIC><!--LJBASI2XXXX--></BIC>
+					<StevilkaBancnegaRacuna>SI56020120090111333</StevilkaBancnegaRacuna>
+					<NazivBanke1>Moja banka d.d.</NazivBanke1>
+					<NazivBanke2>Podružnica center</NazivBanke2>
+					<BIC>LJBASI2XXXX</BIC>
 				</BancniRacun>
 			</FinancniPodatkiPodjetja>
 			<ReferencniPodatkiPodjetja>
 				<VrstaPodatkaPodjetja>VA</VrstaPodatkaPodjetja>
-				<PodatekPodjetja><!--SI67909027--></PodatekPodjetja>
+				<PodatekPodjetja>SI67909027</PodatekPodjetja>
 			</ReferencniPodatkiPodjetja>
 			<ReferencniPodatkiPodjetja>
 				<VrstaPodatkaPodjetja>GN</VrstaPodatkaPodjetja>
-				<PodatekPodjetja><!--1627023--></PodatekPodjetja>
+				<PodatekPodjetja>1627023</PodatekPodjetja>
 			</ReferencniPodatkiPodjetja>
 			<ReferencniPodatkiPodjetja>
 				<VrstaPodatkaPodjetja>IT</VrstaPodatkaPodjetja>
-				<PodatekPodjetja><!--444-55--></PodatekPodjetja>
+				<PodatekPodjetja>444-55</PodatekPodjetja>
 			</ReferencniPodatkiPodjetja>
 			<KontaktiPodjetja>
 				<KontaktnaOseba>
-					<ImeOsebe><%= Stranka.FirstName %> <%= Stranka.LastName %> (<%= Stranka.Email %>)</ImeOsebe>
+					<ImeOsebe>Dejan Lavbič</ImeOsebe>
 				</KontaktnaOseba>
 				<Komunikacije>
-					<StevilkaKomunikacije><%= Stranka.Phone %></StevilkaKomunikacije>
+					<StevilkaKomunikacije>38614798000</StevilkaKomunikacije>
 					<VrstaKomunikacije>TE</VrstaKomunikacije>
 				</Komunikacije>
 				<Komunikacije>
-					<StevilkaKomunikacije><%= Stranka.Fax %></StevilkaKomunikacije>
+					<StevilkaKomunikacije>38612419350</StevilkaKomunikacije>
 					<VrstaKomunikacije>FX</VrstaKomunikacije>
 				</Komunikacije>
 			</KontaktiPodjetja>
@@ -347,10 +335,6 @@
             skupniPopust += 10;
             break;
           }
-          console.log("skupni popust prej:" + skupniPopust + "% ");
-        skupniPopust += DodatniPopust;
-        console.log("skupni popust potem:" + skupniPopust + "% ");
-          
           
 			 var vsotaSPopustiInDavki = 0, vsotaZneskovDdv = 0, vsotaOsnovZaDdv = 0,
 			 		 vsotaVrednosti = 0, vsotaPopustov = 0;
