@@ -238,7 +238,9 @@ streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
                                             vizualiziraj: true, 
                                             postavkeRacuna: pesmi,
                                             Racun: racuni1, 
-                                            Stranka: kupci1//,
+                                            Stranka: kupci1,
+                                            DodatniPopust: 0
+                                            //,
                                             //DatumPlacila: strDatumPlacila
                                           });
                                           odgovor.end();
